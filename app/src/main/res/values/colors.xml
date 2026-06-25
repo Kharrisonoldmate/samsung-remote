@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#0E1622</color>
+    <color name="bg_card">#16202E</color>
+    <color name="lcd_bg">#0A2D33</color>
+    <color name="lcd_text">#7FFFD4</color>
+    <color name="lcd_dim">#3E6E68</color>
+    <color name="btn">#1E2B3C</color>
+    <color name="btn_pressed">#2A3B52</color>
+    <color name="btn_text">#E8EEF6</color>
+    <color name="accent">#2D9CDB</color>
+    <color name="accent_on">#34C759</color>
+    <color name="power">#E03B3B</color>
+    <color name="power_pressed">#B62F2F</color>
+    <color name="white">#FFFFFF</color>
+</resources>
