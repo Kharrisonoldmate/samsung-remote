@@ -10,20 +10,35 @@ class IrController(context: Context) {
 
     val serviceAvailable: Boolean get() = irManager != null
 
+    var lastError: String? = null
+        private set
+
     fun hasEmitter(): Boolean = irManager?.hasIrEmitter() == true
 
     fun status(): String = when {
-        irManager == null -> "ІЧ-сервіс недоступний (null) — стандартна передача неможлива"
+        irManager == null -> "ІЧ-сервіс недоступний (null)"
         irManager.hasIrEmitter() -> "ІЧ-передавач: OK"
-        else -> "Система каже «передавача нема» — пробую передавати все одно"
+        else -> "Система каже «передавача нема» — пробую все одно"
+    }
+
+    fun carrierRangesText(): String {
+        val ranges = try { irManager?.carrierFrequencies } catch (e: Throwable) { null }
+            ?: return "частоти: невідомо"
+        return "частоти: " + ranges.joinToString(", ") { "${it.minFrequency}-${it.maxFrequency}" }
     }
 
     fun transmit(frequencyHz: Int, pattern: IntArray): Boolean {
-        val mgr = irManager ?: return false
+        val mgr = irManager
+        if (mgr == null) {
+            lastError = "ІЧ-сервіс недоступний"
+            return false
+        }
         return try {
             mgr.transmit(frequencyHz, pattern)
+            lastError = null
             true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            lastError = "${e.javaClass.simpleName}: ${e.message ?: "без тексту"}"
             false
         }
     }
