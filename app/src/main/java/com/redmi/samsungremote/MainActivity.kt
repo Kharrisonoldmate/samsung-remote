@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnSleep).setOnClickListener { toggleSleep(); send() }
         findViewById<Button>(R.id.btnReset).setOnClickListener { ac.reset(); send() }
 
-        Toast.makeText(this, ir.status(), Toast.LENGTH_LONG).show()
+        Toast.makeText(this, ir.status() + " · " + ir.carrierRangesText(), Toast.LENGTH_LONG).show()
         updateDisplay()
     }
 
@@ -101,16 +101,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun send() {
         val pattern = ac.nextPattern()
-        var ok = false
-        for (i in 0 until 3) {
-            if (ir.transmit(ac.frequencyHz, pattern)) ok = true
-            try { Thread.sleep(40) } catch (_: InterruptedException) {}
-        }
-        if (!ok && !ir.serviceAvailable && !irWarned) {
-            irWarned = true
-            Toast.makeText(this, "Системний ІЧ-сервіс недоступний на цьому пристрої", Toast.LENGTH_SHORT).show()
-        }
         updateDisplay()
+        Thread {
+            var ok = false
+            for (i in 0 until 3) {
+                if (ir.transmit(ac.frequencyHz, pattern)) ok = true
+                try { Thread.sleep(40) } catch (_: InterruptedException) {}
+            }
+            if (!ok) {
+                val msg = "ІЧ не передано: ${ir.lastError ?: "невідома причина"}"
+                runOnUiThread { Toast.makeText(this, msg, Toast.LENGTH_LONG).show() }
+            }
+        }.start()
     }
 
     private fun modeName(m: Int) = when (m) {
