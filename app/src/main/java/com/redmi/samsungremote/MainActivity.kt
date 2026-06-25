@@ -65,13 +65,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnReset).setOnClickListener { ac.reset(); send() }
 
         if (!ir.hasEmitter()) {
-            Toast.makeText(
-                this,
-                "Увага: на цьому телефоні не знайдено ІЧ-передавача. " +
-                    "Кнопки працюватимуть, але сигнал не передаватиметься.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
+            Toast.makeText(this, ir.status(), Toast.LENGTH_LONG).show()
         updateDisplay()
     }
 
@@ -107,14 +101,10 @@ class MainActivity : AppCompatActivity() {
         if (ac.sleep) ac.setSleep(0) else ac.setSleep(8 * 60)
     }
 
-    private fun send() {
-        val pattern = ac.nextPattern()
-        val ok = ir.transmit(ac.frequencyHz, pattern)
-        if (!ok && !irWarned) {
+    if (!ok && !ir.serviceAvailable && !irWarned) {
             irWarned = true
-            Toast.makeText(this, "ІЧ-передача недоступна на цьому пристрої", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Системний ІЧ-сервіс недоступний на цьому пристрої", Toast.LENGTH_SHORT).show()
         }
-        updateDisplay()
     }
 
     private fun modeName(m: Int) = when (m) {
