@@ -101,7 +101,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun send() {
         val pattern = ac.nextPattern()
-        val ok = ir.transmit(ac.frequencyHz, pattern)
+        var ok = false
+        for (i in 0 until 3) {
+            if (ir.transmit(ac.frequencyHz, pattern)) ok = true
+            try { Thread.sleep(40) } catch (_: InterruptedException) {}
+        }
         if (!ok && !ir.serviceAvailable && !irWarned) {
             irWarned = true
             Toast.makeText(this, "Системний ІЧ-сервіс недоступний на цьому пристрої", Toast.LENGTH_SHORT).show()
