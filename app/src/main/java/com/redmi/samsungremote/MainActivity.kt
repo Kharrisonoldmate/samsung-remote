@@ -18,7 +18,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvFlags: TextView
     private lateinit var tvTimers: TextView
 
-    // Порядок перемикання режимів і вентилятора по колу
     private val modeCycle = intArrayOf(
         SamsungAcProtocol.MODE_COOL,
         SamsungAcProtocol.MODE_DRY,
@@ -64,8 +63,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnSleep).setOnClickListener { toggleSleep(); send() }
         findViewById<Button>(R.id.btnReset).setOnClickListener { ac.reset(); send() }
 
-        if (!ir.hasEmitter()) {
-            Toast.makeText(this, ir.status(), Toast.LENGTH_LONG).show()
+        Toast.makeText(this, ir.status(), Toast.LENGTH_LONG).show()
         updateDisplay()
     }
 
@@ -101,10 +99,14 @@ class MainActivity : AppCompatActivity() {
         if (ac.sleep) ac.setSleep(0) else ac.setSleep(8 * 60)
     }
 
-    if (!ok && !ir.serviceAvailable && !irWarned) {
+    private fun send() {
+        val pattern = ac.nextPattern()
+        val ok = ir.transmit(ac.frequencyHz, pattern)
+        if (!ok && !ir.serviceAvailable && !irWarned) {
             irWarned = true
             Toast.makeText(this, "Системний ІЧ-сервіс недоступний на цьому пристрої", Toast.LENGTH_SHORT).show()
         }
+        updateDisplay()
     }
 
     private fun modeName(m: Int) = when (m) {
@@ -152,7 +154,6 @@ class MainActivity : AppCompatActivity() {
         if (ac.sleep) timers.add("Сон: ${hoursLabel(ac.offTimerMins)}")
         tvTimers.text = timers.joinToString("    ")
 
-        // Тьмяний дисплей, коли вимкнено
         val alpha = if (on) 1f else 0.45f
         tvTemp.alpha = alpha
         tvMode.alpha = alpha
