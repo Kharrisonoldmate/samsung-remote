@@ -34,10 +34,12 @@ class MainActivity : AppCompatActivity() {
     )
     private val timerCycleMins = intArrayOf(0, 60, 120, 180, 360, 540, 720)
 
-    // Реальні hex-команди (зчитані з пульта цієї серії Samsung).
     private val hexOff = "02920F0000000000000000001D0302920F0000000000000000001D03"
     private val hexCool24 = "02920F0000000000000000001D03029201200080000000000100C403"
     private var hexOn = false
+
+    private val freqOptions = intArrayOf(38000, 38400, 37920, 36000)
+    private var freqIdx = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +54,6 @@ class MainActivity : AppCompatActivity() {
         tvFlags = findViewById(R.id.tvFlags)
         tvTimers = findViewById(R.id.tvTimers)
 
-        // Коротке натискання — рамка Samsung; довге — проста рамка.
         findViewById<Button>(R.id.btnPower).setOnClickListener {
             hexOn = !hexOn
             val hex = if (hexOn) hexCool24 else hexOff
@@ -62,12 +63,13 @@ class MainActivity : AppCompatActivity() {
             transmitPattern(ac.patternFromHex(hex))
         }
         findViewById<Button>(R.id.btnPower).setOnLongClickListener {
-            hexOn = !hexOn
-            val hex = if (hexOn) hexCool24 else hexOff
-            ac.setPower(hexOn)
-            Toast.makeText(this, "Проста рамка: " + (if (hexOn) "УВІМК (Cool 24°)" else "ВИМК"), Toast.LENGTH_SHORT).show()
+            val f = freqOptions[freqIdx]
+            freqIdx = (freqIdx + 1) % freqOptions.size
+            hexOn = true
+            ac.setPower(true)
+            Toast.makeText(this, "Тест частоти: $f Гц (Cool 24°)", Toast.LENGTH_SHORT).show()
             updateDisplay()
-            transmitPattern(ac.patternFromHexSimple(hex))
+            transmitPatternFreq(ac.patternFromHex(hexCool24), f)
             true
         }
         findViewById<Button>(R.id.btnTempUp).setOnClickListener { ac.setTemp(ac.getTemp() + 1); send() }
@@ -126,11 +128,13 @@ class MainActivity : AppCompatActivity() {
         transmitPattern(pattern)
     }
 
-    private fun transmitPattern(pattern: IntArray) {
+    private fun transmitPattern(pattern: IntArray) = transmitPatternFreq(pattern, ac.frequencyHz)
+
+    private fun transmitPatternFreq(pattern: IntArray, freq: Int) {
         Thread {
             var ok = false
             for (i in 0 until 3) {
-                if (ir.transmit(ac.frequencyHz, pattern)) ok = true
+                if (ir.transmit(freq, pattern)) ok = true
                 try { Thread.sleep(100) } catch (_: InterruptedException) {}
             }
             if (!ok) {
