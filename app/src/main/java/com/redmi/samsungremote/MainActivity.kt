@@ -34,8 +34,6 @@ class MainActivity : AppCompatActivity() {
     )
     private val timerCycleMins = intArrayOf(0, 60, 120, 180, 360, 540, 720)
 
-    private var irWarned = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -49,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         tvFlags = findViewById(R.id.tvFlags)
         tvTimers = findViewById(R.id.tvTimers)
 
-        findViewById<Button>(R.id.btnPower).setOnClickListener { ac.togglePower(); send() }
+        findViewById<Button>(R.id.btnPower).setOnClickListener { sendPower() }
         findViewById<Button>(R.id.btnTempUp).setOnClickListener { ac.setTemp(ac.getTemp() + 1); send() }
         findViewById<Button>(R.id.btnTempDown).setOnClickListener { ac.setTemp(ac.getTemp() - 1); send() }
         findViewById<Button>(R.id.btnMode).setOnClickListener { cycleMode(); send() }
@@ -103,11 +101,22 @@ class MainActivity : AppCompatActivity() {
     private fun send() {
         val pattern = ac.nextPattern()
         updateDisplay()
+        transmitPattern(pattern)
+    }
+
+    private fun sendPower() {
+        val turningOn = !ac.getPower()
+        val pattern = if (turningOn) ac.powerOnPattern() else ac.powerOffPattern()
+        updateDisplay()
+        transmitPattern(pattern)
+    }
+
+    private fun transmitPattern(pattern: IntArray) {
         Thread {
             var ok = false
             for (i in 0 until 3) {
                 if (ir.transmit(ac.frequencyHz, pattern)) ok = true
-                try { Thread.sleep(40) } catch (_: InterruptedException) {}
+                try { Thread.sleep(100) } catch (_: InterruptedException) {}
             }
             if (!ok) {
                 val msg = "ІЧ не передано: ${ir.lastError ?: "невідома причина"}"
@@ -117,7 +126,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendTest() {
-        // Короткий стандартний NEC-код (38 кГц) для перевірки самого передавача.
         val p = ArrayList<Int>()
         p.add(9000); p.add(4500)
         val data = 0x20DF10EF.toInt()
