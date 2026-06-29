@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- ІЧ-передавач телефона (не вимагає окремого дозволу) -->
+    <!-- Дозвіл на ІЧ-передачу (вимагається на Xiaomi/MIUI та деяких інших) -->
+    <uses-permission android:name="android.permission.TRANSMIT_IR" />
+
     <uses-feature
         android:name="android.hardware.consumerir"
         android:required="false" />
