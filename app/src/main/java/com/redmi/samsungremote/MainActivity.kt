@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnTimerOff).setOnClickListener { cycleTimerOff(); send() }
         findViewById<Button>(R.id.btnSleep).setOnClickListener { toggleSleep(); send() }
         findViewById<Button>(R.id.btnReset).setOnClickListener { ac.reset(); send() }
+        findViewById<Button>(R.id.btnReset).setOnLongClickListener { sendTest(); true }
 
         Toast.makeText(this, ir.status() + " · " + ir.carrierRangesText(), Toast.LENGTH_LONG).show()
         updateDisplay()
@@ -112,6 +113,29 @@ class MainActivity : AppCompatActivity() {
                 val msg = "ІЧ не передано: ${ir.lastError ?: "невідома причина"}"
                 runOnUiThread { Toast.makeText(this, msg, Toast.LENGTH_LONG).show() }
             }
+        }.start()
+    }
+
+    private fun sendTest() {
+        // Короткий стандартний NEC-код (38 кГц) для перевірки самого передавача.
+        val p = ArrayList<Int>()
+        p.add(9000); p.add(4500)
+        val data = 0x20DF10EF.toInt()
+        for (i in 31 downTo 0) {
+            p.add(560)
+            p.add(if ((data shr i) and 1 == 1) 1690 else 560)
+        }
+        p.add(560)
+        val pattern = p.toIntArray()
+        Thread {
+            var ok = false
+            for (i in 0 until 5) {
+                if (ir.transmit(38000, pattern)) ok = true
+                try { Thread.sleep(60) } catch (_: InterruptedException) {}
+            }
+            val msg = if (ok) "Тест надіслано — дивись камерою на ІЧ-вічко"
+                      else "Тест-помилка: ${ir.lastError}"
+            runOnUiThread { Toast.makeText(this, msg, Toast.LENGTH_LONG).show() }
         }.start()
     }
 
