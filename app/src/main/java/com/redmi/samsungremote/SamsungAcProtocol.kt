@@ -48,6 +48,18 @@ class SamsungAcProtocol {
             0x01, 0x02, 0xAE, 0x71, 0x00, 0x15, 0xF0
         )
         private val EXT_MIDDLE = intArrayOf(0x01, 0xD2, 0x0F, 0x00, 0x00, 0x00, 0x00)
+
+        // Спеціальні готові кадри УВІМК/ВИМК (sendOn/sendOff з ir_Samsung.cpp).
+        private val POWER_ON_FRAME = intArrayOf(
+            0x02, 0x92, 0x0F, 0x00, 0x00, 0x00, 0xF0,
+            0x01, 0xD2, 0x0F, 0x00, 0x00, 0x00, 0x00,
+            0x01, 0xE2, 0xFE, 0x71, 0x80, 0x11, 0xF0
+        )
+        private val POWER_OFF_FRAME = intArrayOf(
+            0x02, 0xB2, 0x0F, 0x00, 0x00, 0x00, 0xC0,
+            0x01, 0xD2, 0x0F, 0x00, 0x00, 0x00, 0x00,
+            0x01, 0x02, 0xFF, 0x71, 0x80, 0x11, 0xC0
+        )
     }
 
     private val base = ByteArray(14)
@@ -298,6 +310,26 @@ class SamsungAcProtocol {
         }
         if (p.isNotEmpty() && p.size % 2 == 0) p.removeAt(p.size - 1)
         return p.toIntArray()
+    }
+
+    private fun bytesOf(a: IntArray): ByteArray {
+        val b = ByteArray(a.size)
+        for (i in a.indices) b[i] = a[i].toByte()
+        return b
+    }
+
+    fun powerOnPattern(): IntArray {
+        setPower(true)
+        lastSentPower = true
+        forceExtended = false
+        return waveform(bytesOf(POWER_ON_FRAME))
+    }
+
+    fun powerOffPattern(): IntArray {
+        setPower(false)
+        lastSentPower = false
+        forceExtended = false
+        return waveform(bytesOf(POWER_OFF_FRAME))
     }
 
     val frequencyHz: Int get() = FREQ_HZ
