@@ -49,7 +49,6 @@ class SamsungAcProtocol {
         )
         private val EXT_MIDDLE = intArrayOf(0x01, 0xD2, 0x0F, 0x00, 0x00, 0x00, 0x00)
 
-        // Спеціальні готові кадри УВІМК/ВИМК (sendOn/sendOff з ir_Samsung.cpp).
         private val POWER_ON_FRAME = intArrayOf(
             0x02, 0x92, 0x0F, 0x00, 0x00, 0x00, 0xF0,
             0x01, 0xD2, 0x0F, 0x00, 0x00, 0x00, 0x00,
@@ -330,6 +329,52 @@ class SamsungAcProtocol {
         lastSentPower = false
         forceExtended = false
         return waveform(bytesOf(POWER_OFF_FRAME))
+    }
+
+    private fun hexToBytes(hex: String): ByteArray {
+        val clean = hex.filter { !it.isWhitespace() }
+        val n = clean.length / 2
+        val out = ByteArray(n)
+        for (i in 0 until n) out[i] = clean.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+        return out
+    }
+
+    /** Hex-команда → сигнал «справжньою» рамкою Samsung (заголовки секцій). */
+    fun patternFromHex(hex: String): IntArray {
+        val bytes = hexToBytes(hex)
+        val out = ArrayList<Int>()
+        var i = 0
+        while (i < bytes.size) {
+            val end = if (i + 14 <= bytes.size) i + 14 else bytes.size
+            val wf = waveform(bytes.copyOfRange(i, end))
+            if (out.isNotEmpty()) out.add(13000)
+            for (v in wf) out.add(v)
+            i = end
+        }
+        if (out.isNotEmpty() && out.size % 2 == 0) out.removeAt(out.size - 1)
+        return out.toIntArray()
+    }
+
+    /** Hex-команда → сигнал «простою» рамкою (690+1790, без секцій). */
+    fun patternFromHexSimple(hex: String): IntArray {
+        val bytes = hexToBytes(hex)
+        val out = ArrayList<Int>()
+        var i = 0
+        while (i < bytes.size) {
+            val end = if (i + 14 <= bytes.size) i + 14 else bytes.size
+            if (out.isNotEmpty()) out.add(3000)
+            out.add(690); out.add(1790)
+            for (b in i until end) {
+                val byteVal = bytes[b].toInt() and 0xFF
+                for (bit in 0..7) {
+                    out.add(585)
+                    out.add(if ((byteVal shr bit) and 1 == 1) 1430 else 440)
+                }
+            }
+            i = end
+        }
+        if (out.isNotEmpty() && out.size % 2 == 0) out.removeAt(out.size - 1)
+        return out.toIntArray()
     }
 
     val frequencyHz: Int get() = FREQ_HZ
